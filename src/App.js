@@ -10,7 +10,11 @@ function App() {
   const [msgs, setMsgs] = useState([])
   const live = useRef(null)
 
-  const initLive = () => {
+  const setRoom = () => {
+    if (live.current) {
+      live.current.close()
+    }
+    setMsgs([])
     const ws = new LiveWS(parseInt(roomId, 10))
     
     ws.on('open', () => console.log('Connection is established'))
@@ -39,7 +43,7 @@ function App() {
   return (
     <div className="App">
     <Input value={roomId} onChange={(event)=>{setRoomId(event.target.value)}}></Input>
-    <Button variant="contained" onClick={()=>{initLive()}}>Connect</Button>
+    <Button variant="contained" onClick={()=>{setRoom()}}>Connect</Button>
      <MsgList msgs={msgs}></MsgList>
     </div>
   );
