@@ -1,35 +1,45 @@
 import logo from './logo.svg';
 import './App.css';
-import {Button} from '@mui/material'
-import { useState, useEffect } from 'react';
-const { LiveWS } = require('bilibili-live-ws')
+import {Button, Input} from '@mui/material'
+import { useState, useEffect, useRef } from 'react';
+import { LiveWS } from 'bilibili-live-ws'
 
 
 function App() {
+  const [roomId, setRoomId] = useState(0)
   const [msgs, setMsgs] = useState([])
-  const [live, setLive] = useState(null)
+  const live = useRef(null)
 
   const initLive = () => {
-    const live = new LiveWS(5712445)
-    live.on('open', () => console.log('Connection is established'))
+    const ws = new LiveWS(parseInt(roomId, 10))
+    
+    ws.on('open', () => console.log('Connection is established'))
+    ws.on('live', () => {
+      ws.on('heartbeat', console.log)
+      // 13928
+    })
 
-    setLive(live)
+    ws.on('msg', (data)=>{
+      console.log(data)
+      if (data.cmd === "DANMU_MSG") {
+        setMsgs((prev) => [...prev, {
+          type: "danmu",
+          nickname: data.info[2][1],
+          message: data.info[1]
+        }])
+      }
+    })
+    live.current = ws
   }
 
   useEffect(()=>{
-    if (live) {
-      // Connection is established
-      live.on('DANMU_MSG', (data)=>{
-        setMsgs([...msgs, data])
-        console.log(msgs)
-      })
-    }
-
-  },[live]
-  )
+    
+  },[])
 
   return (
     <div className="App">
+    <Input value={roomId} onChange={(event)=>{setRoomId(event.target.value)}}></Input>
+    <Button variant="contained" onClick={()=>{initLive()}}>Connect</Button>
      <MsgList msgs={msgs}></MsgList>
     </div>
   );
@@ -39,7 +49,7 @@ function MsgList(props) {
   return (
     <div>
        {props.msgs.map((x, i)=>{
-        return <div key={i}>{x.info[2][1]}: {x.info[1]}</div>
+        return <div key={i}>{x.nickname}: {x.message}</div>
       })}
     </div>
   )
